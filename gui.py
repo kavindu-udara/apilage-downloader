@@ -35,7 +35,7 @@ class GUI:
         self.root.title(self.TITLE)
 
         # Icon
-        icon = tk.PhotoImage(file="icon.png")
+        icon = tk.PhotoImage(file="assets/icon.png")
         self.root.iconphoto(True, icon)
 
         #Main frame
