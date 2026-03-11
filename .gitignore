@@ -1,1 +1,10 @@
 /downloads/*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+
+.DS_Store
+.venv/
