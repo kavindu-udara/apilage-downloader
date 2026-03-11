@@ -34,10 +34,6 @@ class GUI:
         #Title
         self.root.title(self.TITLE)
 
-        # Icon
-        icon = tk.PhotoImage(file="assets/icon.png")
-        self.root.iconphoto(True, icon)
-
         #Main frame
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
