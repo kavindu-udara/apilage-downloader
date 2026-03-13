@@ -77,6 +77,7 @@ class GUI:
         self.root.minsize(400, 200)
 
     def setup_submit_button(self, parent_frame : ttk.LabelFrame):
+        """Setup submit button based on the current state."""
         # Remove any existing buttons
         for child in parent_frame.winfo_children():
             if isinstance(child, ttk.Button):
@@ -93,6 +94,7 @@ class GUI:
            url_fetch_button.pack(side=tk.RIGHT, padx=4)  
 
     def setup_quality_options(self, parent_frame : ttk.LabelFrame) : 
+        """Setup quality options based on the current state."""
         self.destroy_children(parent_frame)
         if self.state.state == "fetched":
 
@@ -148,6 +150,7 @@ class GUI:
             info_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
             
     def setup_video_info_frame(self, parent_frame : ttk.LabelFrame):
+        """Setup video info display based on the current state."""
         self.destroy_children(parent_frame)
         if self.state.state == "fetching" :
             loading_label = ttk.Label(parent_frame, text="Loading...")
@@ -169,17 +172,20 @@ class GUI:
             info_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
 
     def destroy_children(self, parent : ttk.LabelFrame):
+        """Recursively destroy all child widgets of the given parent widget."""
         for child in parent.winfo_children():
             if child.winfo_children():
                 self.destroy_children(child)
             child.destroy()   
 
     def fetch_video_info(self):
+        """Fetch video information based on the URL entered by the user."""
         print("url found",  self.url_var.get())
         self.video_info.url = self.url_var.get()
         self.video_controller.fetch_video_info()
 
     def revalitade_ui(self):
+        """Revalidate the UI based on the current state."""
         self.setup_submit_button(self.url_frame)
         self.setup_quality_options(self.download_options_frame)
         self.setup_video_info_frame(self.video_info_frame)
@@ -191,6 +197,7 @@ class GUI:
             self.path_entry_var.set(directory)
 
     def download_video(self):
+        """Initiate the video download process based on the selected quality and download path."""
         self.video_controller.start_download(self.quality_combo.get().split(' - ')[0], self.path_entry_var.get(), self.QUALITY_PRESETS)
 
     def download_complete(self):
