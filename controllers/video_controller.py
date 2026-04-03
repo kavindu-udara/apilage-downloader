@@ -61,7 +61,7 @@ class VideoController:
 
     def start_download(self, quality, output_path, quality_presets, download_playlist: bool = False):
         """Start video download process"""
-        if not self.video_info:
+        if not self.video_info or not self.video_info.url:
             return
         
         self.quality = quality
