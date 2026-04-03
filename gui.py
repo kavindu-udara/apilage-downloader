@@ -39,7 +39,7 @@ class GUI:
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         #URL Frame
-        self.url_frame = ttk.LabelFrame(main_frame, text="Video URL", padding="5")
+        self.url_frame = ttk.LabelFrame(main_frame, text="Video / Playlist URL", padding="5")
         self.url_frame.pack(fill=tk.X, pady=5)
 
         # URL Label
@@ -49,6 +49,16 @@ class GUI:
         self.url_var = tk.StringVar()
         url_entry = ttk.Entry(self.url_frame, textvariable=self.url_var)
         url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        # Playlist mode toggle
+        self.playlist_mode_var = tk.BooleanVar(value=False)
+        playlist_mode_check = ttk.Checkbutton(
+            self.url_frame,
+            text="Playlist",
+            variable=self.playlist_mode_var,
+            command=self.revalitade_ui,
+        )
+        playlist_mode_check.pack(side=tk.RIGHT, padx=5)
 
         # URL fetch button
         self.setup_submit_button(self.url_frame)
@@ -84,7 +94,8 @@ class GUI:
                 child.destroy()
 
         if self.state.state == "fetched":
-            submit_button = ttk.Button(parent_frame, text="Download", command=self.download_video)
+            download_text = "Download Playlist" if self.playlist_mode_var.get() else "Download"
+            submit_button = ttk.Button(parent_frame, text=download_text, command=self.download_video)
             submit_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
             reset_button = ttk.Button(parent_frame, text="Reset", command=self.reset)
@@ -107,18 +118,22 @@ class GUI:
             self.quality_combo = ttk.Combobox(quality_frame_row, state="readonly")
             self.quality_combo.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5, pady=5)
 
-            # Update quality options based on available formats
-            formats = self.video_info.fetched_info.get("formats", [])
-            available_heights = set()
-            for f in formats:
-                if f.get('vcodec') != 'none' and f.get('height'):
-                    available_heights.add(f.get('height'))
-
-            # Filter and sort quality options
+            # For playlist mode, use all presets because per-video formats vary inside a playlist.
             quality_options = []
-            for quality, specs in self.QUALITY_PRESETS.items():
-                if specs['height'] <= max(available_heights, default=0):
-                    quality_options.append(f"{quality} - {specs['description']}")
+            if self.playlist_mode_var.get():
+                quality_options = [f"{quality} - {specs['description']}" for quality, specs in self.QUALITY_PRESETS.items()]
+            else:
+                # Update quality options based on available formats
+                formats = self.video_info.fetched_info.get("formats", [])
+                available_heights = set()
+                for f in formats:
+                    if f.get('vcodec') != 'none' and f.get('height'):
+                        available_heights.add(f.get('height'))
+
+                # Filter and sort quality options
+                for quality, specs in self.QUALITY_PRESETS.items():
+                    if specs['height'] <= max(available_heights, default=0):
+                        quality_options.append(f"{quality} - {specs['description']}")
             
             self.quality_combo["values"] = quality_options
             if quality_options:
@@ -156,14 +171,30 @@ class GUI:
             loading_label = ttk.Label(parent_frame, text="Loading...")
             loading_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
         elif self.state.state == "fetched":
-            title_label = ttk.Label(parent_frame, text=f"Title : {self.video_info.fetched_info.get('title', 'N/A')}")
-            title_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+            fetched_type = self.video_info.fetched_info.get('_type')
+            mode_text = "Mode : Playlist" if fetched_type == 'playlist' else "Mode : Video"
+            mode_label = ttk.Label(parent_frame, text=mode_text)
+            mode_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
 
-            uploader_label = ttk.Label(parent_frame, text=f"Uploader : {self.video_info.fetched_info.get('uploader', 'N/A')}")
-            uploader_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+            if fetched_type == 'playlist':
+                title_label = ttk.Label(parent_frame, text=f"Playlist : {self.video_info.fetched_info.get('title', 'N/A')}")
+                title_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
 
-            duration_label = ttk.Label(parent_frame, text=f"Duration : {self.video_info.fetched_info.get('duration', 'N/A')} seconds")
-            duration_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+                entries = self.video_info.fetched_info.get('entries') or []
+                count_label = ttk.Label(parent_frame, text=f"Items : {len(entries)}")
+                count_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+
+                uploader_label = ttk.Label(parent_frame, text=f"Uploader : {self.video_info.fetched_info.get('uploader', 'N/A')}")
+                uploader_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+            else:
+                title_label = ttk.Label(parent_frame, text=f"Title : {self.video_info.fetched_info.get('title', 'N/A')}")
+                title_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+
+                uploader_label = ttk.Label(parent_frame, text=f"Uploader : {self.video_info.fetched_info.get('uploader', 'N/A')}")
+                uploader_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
+
+                duration_label = ttk.Label(parent_frame, text=f"Duration : {self.video_info.fetched_info.get('duration', 'N/A')} seconds")
+                duration_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
         elif self.state.state == "error":
             error_label = ttk.Label(parent_frame, text="Fetch Failed")
             error_label.pack(side=tk.TOP, fill=tk.X, expand=True, padx=5)
@@ -182,7 +213,7 @@ class GUI:
         """Fetch video information based on the URL entered by the user."""
         print("url found",  self.url_var.get())
         self.video_info.url = self.url_var.get()
-        self.video_controller.fetch_video_info()
+        self.video_controller.fetch_video_info(as_playlist=self.playlist_mode_var.get())
 
     def revalitade_ui(self):
         """Revalidate the UI based on the current state."""
@@ -198,7 +229,12 @@ class GUI:
 
     def download_video(self):
         """Initiate the video download process based on the selected quality and download path."""
-        self.video_controller.start_download(self.quality_combo.get().split(' - ')[0], self.path_entry_var.get(), self.QUALITY_PRESETS)
+        self.video_controller.start_download(
+            self.quality_combo.get().split(' - ')[0],
+            self.path_entry_var.get(),
+            self.QUALITY_PRESETS,
+            download_playlist=self.playlist_mode_var.get(),
+        )
 
     def download_complete(self):
         """Handle actions to be taken after download is complete."""
@@ -212,6 +248,7 @@ class GUI:
         self.video_info.url = None
         self.video_info.fetched_info = {}
         self.url_var.set("")
+        self.playlist_mode_var.set(False)
         self.revalitade_ui()
 
     def show_error(self, message):
