@@ -5,8 +5,10 @@ Apilage Downloader is a small desktop app for fetching YouTube video details and
 ## Features
 
 - Fetch video metadata before downloading
+- Fetch playlist metadata before downloading
 - Select from available quality presets based on the video formats returned by `yt-dlp`
 - Choose the output directory before starting the download
+- Download either a single video or an entire playlist from the GUI
 - Desktop GUI built with Tkinter
 - Cross-platform executable builds through GitHub Actions
 
@@ -60,12 +62,13 @@ python main.py
 ## How to Use
 
 1. Open the app.
-2. Paste a YouTube video URL.
-3. Click `Fetch video`.
-4. Review the title, uploader, and duration.
-5. Select a quality.
-6. Choose a save folder.
-7. Click `Download`.
+2. Paste a YouTube video or playlist URL.
+3. Enable the `Playlist` checkbox if the URL is a playlist.
+4. Click `Fetch video`.
+5. Review the fetched metadata.
+6. Select a quality.
+7. Choose a save folder.
+8. Click `Download` or `Download Playlist`.
 
 ## Build an Executable Locally
 
@@ -96,6 +99,5 @@ You can download the release assets from the repository Releases page.
 ## Notes
 
 - The downloader depends on `yt-dlp`, so download behavior can change if YouTube changes its platform behavior.
-- The GUI currently targets single-video downloads.
 - The repository also contains an older CLI-oriented downloader implementation in `cli/downloader.py`.
 

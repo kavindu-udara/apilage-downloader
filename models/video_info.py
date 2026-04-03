@@ -15,6 +15,10 @@ class VideoInfo:
     @url.setter
     def url(self, value: str):
         """Set and validate the video URL."""
+        if value is None:
+            self._url = None
+            return
+
         if not value or not isinstance(value, str):
             raise ValueError("URL must be a non-empty string")
         

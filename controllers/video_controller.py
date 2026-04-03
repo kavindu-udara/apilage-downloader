@@ -10,7 +10,7 @@ class VideoController:
           self.video_info = video_info
           self.gui = gui
 
-    def fetch_video_info(self):
+    def fetch_video_info(self, as_playlist: bool = False):
             """Fetch video information from YouTube"""
             url = self.video_info.url
             if not url:
@@ -25,15 +25,22 @@ class VideoController:
             self.gui.log(f"Fetching video information for URL: {url}")
 
             def fetch():
+                fetched_ok = False
                 try:
                     ydl_opts = {
                     'quiet': True,
                     'no_warnings': True,
+                    'noplaylist': not as_playlist,
                     }
+
+                    if as_playlist:
+                        # Flat extraction keeps playlist fetch fast while still returning entry count/title.
+                        ydl_opts['extract_flat'] = True
                 
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         self.video_info.fetched_info = ydl.extract_info(url, download=False)
                         print(self.video_info)
+                        fetched_ok = True
                     
 
                         # Update GUI in main thread
@@ -44,16 +51,17 @@ class VideoController:
                     self.gui.log(f"Error fetching video info: {str(e)}")
                     self.gui.show_error(f"Error fetching video info: {str(e)}")
                 finally:
-                    self.state.state = "fetched"
-                    # Update GUI in main thread
-                    self.gui.revalitade_ui()
+                    if fetched_ok:
+                        self.state.state = "fetched"
+                        # Update GUI in main thread
+                        self.gui.revalitade_ui()
         
             # Start fetching in a separate thread
             threading.Thread(target=fetch, daemon=True).start()
 
-    def start_download(self, quality, output_path, quality_presets):
+    def start_download(self, quality, output_path, quality_presets, download_playlist: bool = False):
         """Start video download process"""
-        if not self.video_info:
+        if not self.video_info or not self.video_info.url:
             return
         
         self.quality = quality
@@ -86,11 +94,16 @@ class VideoController:
         def download():
             try:
                 target_height = self.quality_presets[quality]['height']
+                output_template = '%(title)s [%(resolution)s].%(ext)s'
+                if download_playlist:
+                    output_template = '%(playlist_title)s/%(playlist_index)s - %(title)s [%(resolution)s].%(ext)s'
+
                 ydl_opts = {
                     'format': f'bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]',
-                    'outtmpl': os.path.join(output_path, '%(title)s [%(resolution)s].%(ext)s'),
+                    'outtmpl': os.path.join(output_path, output_template),
                     'restrictfilenames': True,
-                    'noplaylist': True,
+                    'noplaylist': not download_playlist,
+                    'ignoreerrors': download_playlist,
                     'quiet': False,
                     'merge_output_format': 'mp4',
                     'progress_hooks': [download_progress_hook],
