@@ -94,20 +94,32 @@ class VideoController:
         def download():
             try:
                 target_height = self.quality_presets[quality]['height']
+                is_audio_only = target_height is None
                 output_template = '%(title)s [%(resolution)s].%(ext)s'
                 if download_playlist:
                     output_template = '%(playlist_title)s/%(playlist_index)s - %(title)s [%(resolution)s].%(ext)s'
 
+                format_selector = 'bestaudio/best' if is_audio_only else f'bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]'
+
                 ydl_opts = {
-                    'format': f'bestvideo[height<={target_height}]+bestaudio/best[height<={target_height}]',
+                    'format': format_selector,
                     'outtmpl': os.path.join(output_path, output_template),
                     'restrictfilenames': True,
                     'noplaylist': not download_playlist,
                     'ignoreerrors': download_playlist,
                     'quiet': False,
-                    'merge_output_format': 'mp4',
                     'progress_hooks': [download_progress_hook],
                 }
+
+                if not is_audio_only:
+                    ydl_opts['merge_output_format'] = 'mp4'
+                else:
+                    ydl_opts['postprocessors'] = [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }]
+                    ydl_opts['keepvideo'] = False
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([self.video_info.url])
@@ -116,8 +128,11 @@ class VideoController:
                 self.gui.log("Download complete!")
 
             except Exception as e:
-                self.gui.log(f"Error during download: {str(e)}")
-                self.gui.show_error(f"Error during download: {str(e)}")
+                error_message = str(e)
+                if 'ffmpeg' in error_message.lower():
+                    error_message = f"{error_message}. Install FFmpeg to enable MP3 conversion."
+                self.gui.log(f"Error during download: {error_message}")
+                self.gui.show_error(f"Error during download: {error_message}")
         
         # Start download in a separate thread
         self.download_thread = threading.Thread(target=download, daemon=True)
