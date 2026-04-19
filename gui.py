@@ -16,7 +16,8 @@ class GUI:
             '720p':  {'resolution': '1280x720',  'height': 720,  'label': 'HD', 'description': 'HD Ready'},
             '480p':  {'resolution': '854x480',   'height': 480,  'label': 'SD', 'description': 'Standard Definition'},
             '360p':  {'resolution': '640x360',   'height': 360,  'label': 'SD', 'description': 'Low Definition'},
-            '240p':  {'resolution': '426x240',   'height': 240,  'label': 'SD', 'description': 'Very Low Definition'}
+            '240p':  {'resolution': '426x240',   'height': 240,  'label': 'SD', 'description': 'Very Low Definition'},
+            'audio': {'resolution': None, 'height': None, 'label': 'Audio', 'description': 'Audio Only (MP3)'},
         }
 
     def __init__(self):
@@ -125,14 +126,20 @@ class GUI:
             else:
                 # Update quality options based on available formats
                 formats = self.video_info.fetched_info.get("formats", [])
+                print("available formats", formats)
                 available_heights = set()
+                has_audio_only = False
                 for f in formats:
                     if f.get('vcodec') != 'none' and f.get('height'):
                         available_heights.add(f.get('height'))
+                    if f.get('vcodec') == 'none' and f.get('acodec') and f.get('acodec') != 'none':
+                        has_audio_only = True
 
                 # Filter and sort quality options
                 for quality, specs in self.QUALITY_PRESETS.items():
-                    if specs['height'] <= max(available_heights, default=0):
+                    if specs['height'] is None and has_audio_only:
+                        quality_options.append(f"{quality} - {specs['description']}")
+                    elif specs['height'] is not None and specs['height'] <= max(available_heights, default=0):
                         quality_options.append(f"{quality} - {specs['description']}")
             
             self.quality_combo["values"] = quality_options
