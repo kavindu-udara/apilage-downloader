@@ -130,16 +130,19 @@ class GUI:
                 available_heights = set()
                 has_audio_only = False
                 for f in formats:
-                    if f.get('vcodec') != 'none' and f.get('height'):
+                    if f.get('vcodec') not in (None, 'none') and f.get('height'):
                         available_heights.add(f.get('height'))
-                    if f.get('vcodec') == 'none' and f.get('acodec') and f.get('acodec') != 'none':
+                    # Audio may be provided by an audio-only or combined format.
+                    if f.get('acodec') not in (None, 'none'):
                         has_audio_only = True
 
                 # Filter and sort quality options
                 for quality, specs in self.QUALITY_PRESETS.items():
                     if specs['height'] is None and has_audio_only:
                         quality_options.append(f"{quality} - {specs['description']}")
-                    elif specs['height'] is not None and specs['height'] <= max(available_heights, default=0):
+                    elif specs['height'] is not None and any(
+                        height <= specs['height'] for height in available_heights
+                    ):
                         quality_options.append(f"{quality} - {specs['description']}")
             
             self.quality_combo["values"] = quality_options

@@ -31,6 +31,9 @@ class VideoController:
                     'quiet': True,
                     'no_warnings': True,
                     'noplaylist': not as_playlist,
+                    'extractor_args': {
+                        'youtube': {'player_client': ['android']},
+                    },
                     }
 
                     if as_playlist:
@@ -108,6 +111,9 @@ class VideoController:
                     'noplaylist': not download_playlist,
                     'ignoreerrors': download_playlist,
                     'quiet': False,
+                    'extractor_args': {
+                        'youtube': {'player_client': ['android']},
+                    },
                     'progress_hooks': [download_progress_hook],
                 }
 
